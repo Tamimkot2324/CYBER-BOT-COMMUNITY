@@ -816,7 +816,7 @@ module.exports.handleReply = async function({ api, event, handleReply }) {
 module.exports.run = async ({ event, api }) => {
   const { threadID, messageID, senderID } = event;
   
-  api.sendMessage("⚙️⚙️𝗜𝘀𝗹𝗮𝗺𝗶𝗰𝗸 𝗰𝗵𝗮𝘁 𝗯𝗼𝘁 Command List ⚙️⚙️"
+  api.sendMessage("⚙️⚙️𝗧𝗮𝗺𝗶𝗺 𝗰𝗵𝗮𝘁 𝗯𝗼𝘁 Command List ⚙️⚙️"
      + "\n[01] Edit bot bio"
      + "\n[02] Edit bot nicknames"
      + "\n[03] View pending messages"
