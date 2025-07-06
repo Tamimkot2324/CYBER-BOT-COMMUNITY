@@ -6,7 +6,7 @@ module.exports = {
     name: "4k",
     aliases: ["4k", "remini"],
     version: "1.0",
-    author: "JARiF",
+    author: "Md Tamim helped by jitu",
     countDown: 15,
     role: 0,
     longDescription: "Upscale your image.",
