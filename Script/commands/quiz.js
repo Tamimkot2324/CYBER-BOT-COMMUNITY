@@ -1,51 +1,62 @@
+const fs = require("fs-extra");
+const path = require("path");
+
 module.exports.config = {
-	name: "quiz",
-	version: "1.0.0",
-	credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-	hasPermssion: 0,
-	description: "Answer questions (English)",
-	commandCategory: "game",
-	cooldowns: 5,
-	dependencies: {
-		"axios": ""
-	}
+  name: "quiz",
+  version: "2.0.0",
+  hasPermssion: 0,
+  credits: "ChatGPT-Bangla",
+  description: "বাংলা কুইজ খেলুন এবং পুরস্কার জিতুন!",
+  commandCategory: "game",
+  usages: "",
+  cooldowns: 5
 };
 
-module.exports.handleReaction = ({ api, event, handleReaction }) => {
-	if (!event.userID == handleReaction.author) return;
-	let response = "";
-	if (event.reaction == "👍") response = "True"
-	else response = "False";
-	if (response == handleReaction.answer) api.sendMessage("congrats, you got the answer right xD", event.threadID);
-	else api.sendMessage("oops, you got the answer wrong :'<", event.threadID);
-	const indexOfHandle = client.handleReaction.findIndex(e => e.messageID == handleReaction.messageID);
-	global.client.handleReaction.splice(indexOfHandle, 1);
-	handleReaction.answerYet = 1;
-	return global.client.handleReaction.push(handleReaction);
-}
+let questions = [];
+const session = new Map();
 
-module.exports.run = async ({  api, event, args }) => {
-	const axios = global.nodemodule["axios"];
-	let difficulties = ["easy", "medium", "hard"];
-	let difficulty = args[0];
-	(difficulties.some(item => difficulty == item)) ? "" : difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
-	let fetch = await axios(`https://opentdb.com/api.php?amount=1&encode=url3986&type=boolean&difficulty=${difficulty}`);
-	if (!fetch.data) return api.sendMessage("Can't find the question because the server is busy", event.threadID, event.messageID);
-	return api.sendMessage(`Here is the question for you:\n        ${decodeURIComponent(fetch.data.results[0].question)}\n\n   👍: True       😢: False`, event.threadID, async (err, info) => {
-		global.client.handleReaction.push({
-			name: "quiz",
-			messageID: info.messageID,
-			author: event.senderID,
-			answer: fetch.data.results[0].correct_answer,
-			answerYet: 0
-		});
-		await new Promise(resolve => setTimeout(resolve, 20 * 1000));
-		const indexOfHandle = global.client.handleReaction.findIndex(e => e.messageID == info.messageID);
-		let data = global.client.handleReaction[indexOfHandle];
-		if (data.answerYet !== 1) {
-			api.sendMessage(`Time out!! The correct answer is ${fetch.data.results[0].correct_answer}`, event.threadID, info.messageID);
-			return global.client.handleReaction.splice(indexOfHandle, 1);
-		}
-		else return;
-	});
-}
+module.exports.onLoad = function () {
+  const file = path.resolve(__dirname, "cache", "quiz_bank.json");
+  if (!fs.existsSync(file)) return console.error("❌ কুইজ প্রশ্ন ফাইল পাওয়া যায়নি!");
+  questions = JSON.parse(fs.readFileSync(file, "utf-8"));
+  console.log(`✅ Loaded ${questions.length} quiz questions.`);
+};
+
+module.exports.run = async function ({ api, event }) {
+  const { senderID, threadID, messageID } = event;
+  if (!questions.length) return api.sendMessage("❌ প্রশ্ন লোড হয়নি।", threadID, messageID);
+
+  const quiz = questions[Math.floor(Math.random() * questions.length)];
+  const text = `🎯 প্রশ্ন:\n${quiz.question}\n\n` +
+               quiz.options.map((opt, i) => `${i + 1}. ${opt}`).join("\n") +
+               "\n\n✏️ উত্তর দিতে শুধু অপশন নম্বর লিখুন (1-4)।";
+
+  session.set(senderID, {
+    answer: quiz.answer,
+    timeout: setTimeout(() => session.delete(senderID), 60 * 1000)
+  });
+
+  return api.sendMessage(text, threadID, messageID);
+};
+
+module.exports.handleReply = async function ({ event, api, Currencies }) {
+  const { senderID, body, threadID, messageID } = event;
+  if (!session.has(senderID)) return;
+
+  const userAns = parseInt(body.trim());
+  if (isNaN(userAns) || userAns < 1 || userAns > 4)
+    return api.sendMessage("⚠️ ১ থেকে ৪ এর মধ্যে একটি নম্বর দিন।", threadID, messageID);
+
+  const data = session.get(senderID);
+  clearTimeout(data.timeout);
+  session.delete(senderID);
+
+  if (userAns === data.answer) {
+    const rewardXP = 50, rewardMoney = 2000;
+    await Currencies.increaseMoney(senderID, rewardMoney);
+    await Currencies.increaseExp(senderID, rewardXP);
+    return api.sendMessage(`✅ সঠিক উত্তর!\n🎁 আপনি পেয়েছেন:\n+💸 ${rewardMoney} টাকা\n+⭐ ${rewardXP} XP`, threadID, messageID);
+  } else {
+    return api.sendMessage(`❌ ভুল উত্তর! সঠিক উত্তর ছিল অপশন ${data.answer}`, threadID, messageID);
+  }
+};
