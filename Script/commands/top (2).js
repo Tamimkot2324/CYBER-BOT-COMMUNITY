@@ -1,107 +1,44 @@
 module.exports.config = {
   name: "top",
-  version: "0.0.5",
+  version: "2.0.0",
   hasPermssion: 0,
-  credits: "𝐏𝐫𝐢𝐲𝐚𝐧𝐬𝐡 𝐑𝐚𝐣𝐩𝐮𝐭",
-  description: "Top Server!",
-  commandCategory: "group",
-  usages: "[thread/user/money/level]",
+  credits: "Monsur Edit ✨",
+  description: "Display a premium-styled top 20 richest users list",
+  commandCategory: "economy",
+  usages: "top",
   cooldowns: 5
 };
 
-module.exports.run = async ({ event, api, args, Currencies, Users }) => {
-    const { threadID, messageID } = event;
+module.exports.run = async function({ api, event, Currencies }) {
+  try {
+    const allUser = await Currencies.getAll(['userID', 'money']);
+    const sorted = allUser.sort((a, b) => b.money - a.money).slice(0, 20);
 
+    let msg = `💎 𝗧𝗢𝗣 𝟮𝟬 𝗥𝗜𝗖𝗛𝗘𝗦𝗧 𝗨𝗦𝗘𝗥𝗦 💎\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
-  ///////////////////////////////////////////
-  //===== Check if there is a limit or not =====//
-  if (args[1] && isNaN(args[1]) || parseInt(args[1]) <= 0) return api.sendMessage("list length information must be a number and not less than 0", event.threadID, event.messageID);
-  var option = parseInt(args[1] || 10);
-  var data, msg = "";
+    let index = 1;
+    for (const user of sorted) {
+      const name = await api.getUserInfo(user.userID)
+        .then(res => res[user.userID].name)
+        .catch(() => "Unknown User");
 
-  ///////////////////////////////////////
-  //===== Check the case =====//
-  var fs = require("fs-extra");
-  var request = require("request");  // Covernt exp to level
-    function expToLevel(point) {
-  if (point < 0) return 0;
-  return Math.floor((Math.sqrt(1 + (4 * point) / 3) + 1) / 2);
-    }
-    //level 
-    if (args[0] == "user") { 
-    let all = await Currencies.getAll(['userID', 'exp']);
-        all.sort((a, b) => b.exp - a.exp);
-        let num = 0;
-               let msg = {
-          body: 'The 10 People Highest Level On Server!',
-          
-        }
-        for (var i = 0; i < 10; i++) {
-           
-   
-          let level = expToLevel(all[i].exp);
-          var name = (await Users.getData(all[i].userID)).name;      
-  
-          num += 1;
-          msg.body += '\n' + num + '. ' + name + ' - level ' + level;}
-           console.log(msg.body)
-                    api.sendMessage(msg, event.threadID, event.messageID)
-    }
-  if (args[0] == "thread") {
-    var threadList = [];
-    
-    //////////////////////////////////////////////
-    //===== Get the entire group and message number =====//
-    try {
-          data = await api.getThreadList(option + 10, null, ["INBOX"]);
-    }
-    catch (e) {
-      console.log(e);
+      const medal = index === 1 ? "🥇"
+                  : index === 2 ? "🥈"
+                  : index === 3 ? "🥉"
+                  : "🏅";
+
+      msg += `${medal} ${index.toString().padStart(2, '0')}. ${name}\n`;
+      msg += `   💰 ${user.money.toLocaleString()} coins\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      index++;
     }
 
-    for (const thread of data) {
-      if (thread.isGroup == true) threadList.push({ threadName: thread.name, threadID: thread.threadID, messageCount: thread.messageCount });
-    }
-    
-    /////////////////////////////////////////////////////
-    //===== Sort from highest to lowest for each group =====//
-    threadList.sort((a, b) => {
-      if (a.messageCount > b.messageCount) return -1;
-            if (a.messageCount < b.messageCount) return 1;
-    })
+    msg += `👑 Keep earning to climb the ranks!`;
 
-    ///////////////////////////////////////////////////////////////
-    //===== Start getting the push list into the return template =====//
-    var i = 0;
-    for(const dataThread of threadList) {
-      if (i == option) break;
-      msg += `${i+1}/ ${(dataThread.threadName)||"No name"}\nTID: [${dataThread.threadID}]\nNumber of message: ${dataThread.messageCount} message\n\n`;
-      i+=1;
-    }
-    
-    return api.sendMessage(`Top ${threadList.length} Groups Have The Most Number Of Message:\n_____________________________\n${msg}\n_____________________________`, threadID, messageID);
+    return api.sendMessage(msg, event.threadID, event.messageID);
+  } catch (err) {
+    console.error(err);
+    return api.sendMessage("⚠️ Error fetching leaderboard.", event.threadID, event.messageID);
   }
-  
- if (args[0] == "money") { 
-    let all = await Currencies.getAll(['userID', 'money']);
-        all.sort((a, b) => b.money - a.money);
-        let num = 0;
-               let msg = {
-          body: 'The 10 People Richest On Server!',
-          
-        }
-        for (var i = 0; i < 10; i++) {
-        
-   
-          let level = all[i].money;
-      
-          var name = (await Users.getData(all[i].userID)).name;    
-                    
-          num += 1;
-          msg.body += '\n' + num + '. ' + name + ': ' + level + "💵";}
-                    console.log(msg.body)
-                    api.sendMessage(msg, event.threadID, event.messageID)
-    }
-
-}
-
+};
