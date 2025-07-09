@@ -1,42 +1,45 @@
 module.exports.config = {
-  name: "setcoin",
+  name: "setcoins",
   version: "1.0.0",
-  hasPermssion: 2, // শুধু অ্যাডমিন পারবে
+  hasPermssion: 2, // 🛡️ শুধু admin ইউজ করতে পারবে
   credits: "Monsur Edit",
-  description: "Set someone's coin balance manually",
+  description: "Set any user's coin balance manually",
   commandCategory: "economy",
   usages: "[tag or uid] [amount]",
   cooldowns: 5
 };
 
-module.exports.run = async function({ api, event, args, Currencies }) {
-  const { threadID, messageID, mentions } = event;
+module.exports.run = async function({ api, event, args, Currencies, mentions }) {
+  const { threadID, messageID } = event;
 
-  let targetID, nameTag;
+  let targetID;
+  let nameTarget;
 
-  // ✅ ১. যদি কেউকে tag করে
+  // ✅ ট্যাগ করা ইউজার
   if (Object.keys(mentions).length > 0) {
     targetID = Object.keys(mentions)[0];
-    nameTag = mentions[targetID].replace("@", "");
-  } 
-  // ✅ ২. না হলে ধরে নিচ্ছে uid দিলো
-  else {
+    nameTarget = mentions[targetID].replace("@", "");
+  }
+  // ✅ UID দিয়ে
+  else if (!isNaN(args[0])) {
     targetID = args[0];
-    nameTag = "User";
+    nameTarget = `User (${targetID})`;
+  } 
+  else {
+    return api.sendMessage("❌ Please tag a user or provide a valid UID.", threadID, messageID);
   }
 
-  // ✅ ৩. টাকা validate
+  // ✅ এমাউন্ট validate
   const amount = parseInt(args[args.length - 1]);
   if (isNaN(amount) || amount < 0) {
-    return api.sendMessage("❌ Please provide a valid amount to set.", threadID, messageID);
+    return api.sendMessage("❌ Please provide a valid amount.", threadID, messageID);
   }
 
-  // ✅ ৪. টাকা সেট করা
   try {
     await Currencies.setData(targetID, { money: amount });
-    return api.sendMessage(`✅ Successfully set ${nameTag}'s balance to ${amount} coins.`, threadID, messageID);
+    return api.sendMessage(`✅ Set ${nameTarget}'s coin balance to ${amount} coins.`, threadID, messageID);
   } catch (err) {
     console.error(err);
-    return api.sendMessage("⚠️ Failed to set balance. Please try again.", threadID, messageID);
+    return api.sendMessage("⚠️ Failed to set coins. Please try again.", threadID, messageID);
   }
 };
