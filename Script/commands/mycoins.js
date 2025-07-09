@@ -1,45 +1,46 @@
 module.exports.config = {
-	name: "coin",
-	version: "1.0.2",
-	hasPermssion: 0,
-	credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-	description: "Check the amount of yourself or the person tagged",
-	commandCategory: "economy",
-	usages: "[Tag]",
-	cooldowns: 5
+  name: "coin",
+  version: "1.1.0",
+  hasPermssion: 0,
+  credits: "Monsur Edit",
+  description: "Check your current coin balance",
+  commandCategory: "economy",
+  usages: "[tag]",
+  cooldowns: 5,
 };
 
-module.exports.languages = {
-	"vi": {
-		"sotienbanthan": "Số tiền bạn đang có: %1$",
-		"sotiennguoikhac": "Số tiền của %1 hiện đang có là: %2$"
-	},
-	"en": {
-		"sotienbanthan": "Your current balance: %1$",
-		"sotiennguoikhac": "%1's current balance: %2$."
-	}
-}
+module.exports.run = async function({ api, event, Currencies }) {
+  const { threadID, messageID, senderID, mentions } = event;
 
-module.exports.run = async function({ api, event, args, Currencies, getText }) {
-	const { threadID, messageID, senderID, mentions } = event;
+  let targetID = senderID;
+  let name;
 
-	if (!args[0]) {
-		const money = (await Currencies.getData(senderID)).money;
-		return api.sendMessage(getText("sotienbanthan", money), threadID, messageID);
-	}
+  // যদি ট্যাগ করে কাউকে
+  if (Object.keys(mentions).length > 0) {
+    targetID = Object.keys(mentions)[0];
+    name = mentions[targetID].replace("@", "");
+  } else {
+    const userInfo = await api.getUserInfo(senderID);
+    name = userInfo[senderID].name;
+  }
 
-	else if (Object.keys(event.mentions).length == 1) {
-		var mention = Object.keys(mentions)[0];
-		var money = (await Currencies.getData(mention)).money;
-		if (!money) money = 0;
-		return api.sendMessage({
-			body: getText("sotiennguoikhac", mentions[mention].replace(/\@/g, ""), money),
-			mentions: [{
-				tag: mentions[mention].replace(/\@/g, ""),
-				id: mention
-			}]
-		}, threadID, messageID);
-	}
+  // টাকা পাওয়া
+  const data = await Currencies.getData(targetID);
+  const money = data.money || 0;
 
-	else return global.utils.throwError(this.config.name, threadID, messageID);
-}
+  // 🔥 Format function
+  function formatMoney(amount) {
+    if (amount < 1_000) return `${amount} coins`;
+    if (amount < 1_000_000) return `${(amount / 1_000).toFixed(1)}K coins`;
+    if (amount < 1_000_000_000) return `${(amount / 1_000_000).toFixed(2)}M coins`;
+    return `${(amount / 1_000_000_000).toFixed(2)}B coins`;
+  }
+
+  const formatted = formatMoney(money);
+
+  return api.sendMessage(
+    `💰 ${name}'s balance: ${formatted}`,
+    threadID,
+    messageID
+  );
+};
