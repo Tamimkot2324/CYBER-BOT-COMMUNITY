@@ -12,9 +12,9 @@ module.exports.config = {
 
 module.exports.handleEvent = function({ api, event, client, __GLOBAL }) {
 	var { threadID, messageID } = event;
-	if (event.body.indexOf("BIRYANI")==0 || event.body.indexOf("Biryani")==0 || event.body.indexOf("biryani")==0 || event.body.indexOf(".biryani")==0) {
+	if (event.body.indexOf("BIRYANI")==0 || event.body.indexOf("Biriyani")==0 || event.body.indexOf("biryani")==0 || event.body.indexOf(".biryani")==0) {
 		var msg = {
-				body: "💝 YE LO BBY BIRYANI KHAO 🥗\n\n(-𝐌𝐚𝐝𝐞 𝐁𝐲 ཫ༄𒁍⃝𝐌𝐀𝐑⃟𝐈𝐍𝐀❤️-)",
+				body: "💝 এই নাও bby বিরিয়ানি খাও 🥗\n\n(-𝐌𝐚𝐝𝐞 𝐁𝐲 ཫ༄𝗠𝗮𝘆𝗮 𝗮𝗸𝘁𝗲𝗿❤️-)",
 				attachment: 
 fs.createReadStream(__dirname + `/cache/Biryani.jpg`)
 			}
